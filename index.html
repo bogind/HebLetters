@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>לוּחַ אוֹתִיּוֹת וּנְקֻדּוֹת - Hebrew Reading Chart</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Friendly rounded Hebrew typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #fdfbf7;
+      --card-bg: #ffffff;
+      --primary: #4F46E5;
+      --accent: #FDE047;
+    }
+
+    body {
+      font-family: 'Varela Round', sans-serif;
+      background-color: var(--bg-color);
+      color: #334155;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hebrew-font {
+      font-family: 'Varela Round', sans-serif;
+    }
+
+    /* Playful button style for the main grid */
+    .poster-card {
+      background-color: var(--card-bg);
+      border: 3px solid #e2e8f0;
+      border-bottom-width: 6px;
+      border-radius: 24px;
+      transition: all 0.1s ease-out;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .poster-card:active {
+      transform: translateY(4px);
+      border-bottom-width: 2px;
+      margin-bottom: 4px;
+      background-color: #f8fafc;
+    }
+
+    /* Radial orbit button style */
+    .orbit-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      margin-top: -24px;
+      margin-left: -24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      background: white;
+      border: 3px solid #cbd5e1;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .orbit-btn.active {
+      border-color: #6366f1;
+      background-color: #e0e7ff;
+      color: #4338ca;
+      transform: scale(1.15) !important;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      z-index: 10;
+    }
+
+    /* Fixed center button styling */
+    #centerPlaySound {
+      line-height: 1; /* Prevent squashing */
+      overflow: visible; /* Allow Nikud to display fully if needed, though they shouldn't overflow this much */
+    }
+
+    /* Bottom-sheet slide-up for mobile & tablet */
+    @keyframes slideUp {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .sheet-animate {
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .pulse-animation {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .7; transform: scale(0.95); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-100">
+
+  <!-- Playful Header -->
+  <header class="w-full bg-white/80 sticky top-0 z-20 backdrop-blur-md border-b-2 border-indigo-50">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-indigo-900 hebrew-font">
+          לוּחַ אוֹתִיּוֹת
+        </h1>
+      </div>
+      <button id="quickSoundTest" class="text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-full flex items-center gap-2 active:scale-95 transition">
+        <span>🔊</span>
+        <span class="hidden sm:inline">בְּדִיקַת קוֹל</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Poster Board Grid -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full flex flex-col justify-center">
+    <!-- Clean, larger Reference Grid (3 cols mobile, 4-5 cols tablet/desktop) -->
+    <div id="posterGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 sm:gap-6">
+      <!-- Letters injected by JS -->
+    </div>
+  </main>
+
+  <!-- Clean Bottom-sheet / Dialog for Letter Pronunciation Reference -->
+  <div id="letterModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <!-- Backdrop dismiss area -->
+    <div id="modalBackdrop" class="absolute inset-0"></div>
+
+    <!-- Reference Card -->
+    <div class="relative w-full sm:max-w-lg bg-[#fdfbf7] rounded-t-[2rem] sm:rounded-3xl shadow-2xl border-2 border-white p-5 sm:p-8 sheet-animate z-10 max-h-[95vh] flex flex-col">
+      
+      <!-- Top nav: close button + prev/next -->
+      <div class="flex items-center justify-between pb-2">
+        <button id="modalPrev" class="w-10 h-10 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center hover:bg-slate-50 active:scale-90 transition text-slate-400">
+          ➡️
+        </button>
+        <div class="text-lg font-bold text-slate-400 hebrew-font" id="modalLetterName"></div>
+        <button id="modalNext" class="w-10 h-10 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center hover:bg-slate-50 active:scale-90 transition text-slate-400">
+          ⬅️
+        </button>
+      </div>
+      
+      <!-- Close Button (Top right overlapping) -->
+      <button id="closeModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100/50 text-xl font-bold active:scale-90 transition">
+        ✕
+      </button>
+
+      <!-- Radial Nikud Selection Area -->
+      <div class="relative w-full h-[280px] sm:h-[320px] flex items-center justify-center my-2">
+        
+        <!-- Big Active Letter in Center -->
+        <button id="centerPlaySound" class="relative z-10 w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-full border-4 border-indigo-100 shadow-lg flex flex-col items-center justify-center active:scale-95 transition cursor-pointer group hover:border-indigo-200">
+          <div id="activeVowelSymbol" class="text-6xl sm:text-7xl font-black text-indigo-950 hebrew-font leading-none pt-2">
+            אָ
+          </div>
+          <div class="absolute -bottom-3 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm group-hover:bg-indigo-600 transition">
+            🔊 נַגֵּן
+          </div>
+        </button>
+
+        <!-- Orbiting Buttons Container -->
+        <div id="radialContainer" class="absolute inset-0">
+          <!-- Small circles populated by JS -->
+        </div>
+
+      </div>
+
+      <!-- Word Context Line with Highlighting -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-slate-100 flex flex-col gap-3 shadow-sm mt-2">
+        
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="text-4xl sm:text-5xl bg-slate-50 w-16 h-16 rounded-xl flex items-center justify-center border border-slate-100" id="wordEmoji">
+              🦁
+            </div>
+            <div class="flex flex-col">
+              <div id="wordDisplay" class="text-3xl sm:text-4xl font-bold text-slate-800 hebrew-font flex items-baseline gap-0.5">
+                <!-- Content injected by JS -->
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <span id="activeNikudName" class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">קָמַץ</span>
+                <span id="wordTranslation" class="text-xs text-slate-400 font-medium">Lion</span>
+              </div>
+            </div>
+          </div>
+
+          <button id="playWordAudio" class="w-12 h-12 bg-green-100 hover:bg-green-200 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition shadow-sm" title="הַשְׁמָעַת הַמִּלָּה">
+            <svg class="w-6 h-6 fill-current ml-1" viewBox="0 0 20 20">
+              <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="text-center py-6 text-sm text-slate-400 font-medium">
+    לוּחַ אוֹתִיּוֹת יְדִידוּתִי • לִלְמִידָה וְהֲנָאָה
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="statusToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-indigo-900 text-white text-sm font-bold px-6 py-3 rounded-full opacity-0 pointer-events-none transition-opacity z-50 shadow-lg"></div>
+
+  <script>
+    // Clean dataset of 22 letters. The FIRST item in each vowels array is the Kamatz/Patach version.
+    const POSTER_DATA = [
+      {
+        letter: 'א', name: 'אָלֶף',
+        vowels: [
+          { symbol: 'אָ', name: 'קָמַץ', sound: 'אָ', word: 'אַרְנָב', hl: 'אַרְ', rest: 'נָב', tr: 'Rabbit', emoji: '🐇' },
+          { symbol: 'אֶ', name: 'סֶגוֹל', sound: 'אֶ', word: 'אֶצְבַּע', hl: 'אֶצְ', rest: 'בַּע', tr: 'Finger', emoji: '☝️' },
+          { symbol: 'אִ', name: 'חִירִיק', sound: 'אִי', word: 'אִמָּא', hl: 'אִ', rest: 'מָּא', tr: 'Mom', emoji: '👩' },
+          { symbol: 'אוֹ', name: 'חוֹלָם', sound: 'אוֹ', word: 'אוֹטוֹ', hl: 'אוֹ', rest: 'טוֹ', tr: 'Car', emoji: '🚗' },
+          { symbol: 'אֻ', name: 'קֻבּוּץ', sound: 'אוּ', word: 'אֻמְלָל', hl: 'אֻמְ', rest: 'לָל', tr: 'Miserable', emoji: '😞' }
+        ]
+      },
+      {
+        letter: 'ב', name: 'בֵּית',
+        vowels: [
+          { symbol: 'בַּ', name: 'פַּתַּח (דָּגֵשׁ)', sound: 'בַּ', word: 'בַּיִת', hl: 'בַּ', rest: 'יִת', tr: 'House', emoji: '🏠' },
+          { symbol: 'בֵּ', name: 'צֵירֵי (דָּגֵשׁ)', sound: 'בֵּ', word: 'בֵּיצָה', hl: 'בֵּי', rest: 'צָה', tr: 'Egg', emoji: '🥚' },
+          { symbol: 'בִּ', name: 'חִירִיק (דָּגֵשׁ)', sound: 'בִּי', word: 'בִּרְכַּיִם', hl: 'בִּרְ', rest: 'כַּיִם', tr: 'Knees', emoji: '🦵' },
+          { symbol: 'בּוֹ', name: 'חוֹלָם (דָּגֵשׁ)', sound: 'בּוֹ', word: 'בּוֹר', hl: 'בּוֹ', rest: 'ר', tr: 'Pit', emoji: '🕳️' },
+          { symbol: 'בֻּ', name: 'קֻבּוּץ (דָּגֵשׁ)', sound: 'בּוּ', word: 'בֻּבָּה', hl: 'בֻּ', rest: 'בָּה', tr: 'Doll', emoji: '🧸' },
+          { symbol: 'בָ', name: 'קָמַץ (רָפֶה)', sound: 'בָ', word: 'לָבָן', prefix: 'לָ', hl: 'בָ', rest: 'ן', tr: 'White', emoji: '⚪' },
+          { symbol: 'בֶ', name: 'סֶגוֹל (רָפֶה)', sound: 'בֶ', word: 'רַכֶּבֶת', prefix: 'רַכֶּ', hl: 'בֶ', rest: 'ת', tr: 'Train', emoji: '🚂' },
+          { symbol: 'בִ', name: 'חִירִיק (רָפֶה)', sound: 'בִ', word: 'עֲנָבִים', prefix: 'עֲנָ', hl: 'בִ', rest: 'ים', tr: 'Grapes', emoji: '🍇' },
+          { symbol: 'בְ', name: 'שְׁוָא (רָפֶה)', sound: 'בְ', word: 'כּוֹכָב', prefix: 'כּוֹכָ', hl: 'ב', rest: '', tr: 'Star', emoji: '⭐' }
+        ]
+      },
+      {
+        letter: 'ג', name: 'גִּימֶל',
+        vowels: [
+          { symbol: 'גָּ', name: 'קָמַץ', sound: 'גָּ', word: 'גָּמָל', hl: 'גָּ', rest: 'מָל', tr: 'Camel', emoji: '🐪' },
+          { symbol: 'גֶּ', name: 'סֶגוֹל', sound: 'גֶּ', word: 'גֶּזֶר', hl: 'גֶּ', rest: 'זֶר', tr: 'Carrot', emoji: '🥕' },
+          { symbol: 'גִּ', name: 'חִירִיק', sound: 'גִּי', word: 'גִּיטָרָה', hl: 'גִּי', rest: 'טָרָה', tr: 'Guitar', emoji: '🎸' },
+          { symbol: 'גּוֹ', name: 'חוֹלָם', sound: 'גּוֹ', word: 'גּוֹזָל', hl: 'גּוֹ', rest: 'זָל', tr: 'Chick', emoji: '🐣' },
+          { symbol: 'גּוּ', name: 'שׁוּרוּק', sound: 'גּוּ', word: 'גּוּר', hl: 'גּוּ', rest: 'ר', tr: 'Puppy', emoji: '🐶' },
+          { symbol: 'גְּ', name: 'שְׁוָא', sound: 'גְּ', word: 'גְּלִידָה', hl: 'גְּ', rest: 'לִידָה', tr: 'Ice Cream', emoji: '🍦' }
+        ]
+      },
+      {
+        letter: 'ד', name: 'דָּלֶת',
+        vowels: [
+          { symbol: 'דָּ', name: 'קָמַץ', sound: 'דָּ', word: 'דָּג', hl: 'דָּ', rest: 'ג', tr: 'Fish', emoji: '🐟' },
+          { symbol: 'דֶּ', name: 'סֶגוֹל', sound: 'דֶּ', word: 'דֶּלֶת', hl: 'דֶּ', rest: 'לֶת', tr: 'Door', emoji: '🚪' },
+          { symbol: 'דִּ', name: 'חִירִיק', sound: 'דִּי', word: 'דִּינוֹזָאוּר', hl: 'דִּי', rest: 'נוֹזָאוּר', tr: 'Dinosaur', emoji: '🦖' },
+          { symbol: 'דֹּ', name: 'חוֹלָם', sound: 'דֹּ', word: 'דֹּב', hl: 'דֹּ', rest: 'ב', tr: 'Bear', emoji: '🐻' },
+          { symbol: 'דֻּ', name: 'קֻבּוּץ', sound: 'דּוּ', word: 'דֻּבְדְּבָן', hl: 'דֻּ', rest: 'בְדְּבָן', tr: 'Cherry', emoji: '🍒' }
+        ]
+      },
+      {
+        letter: 'ה', name: 'הֵא',
+        vowels: [
+          { symbol: 'הַ', name: 'פַּתַּח', sound: 'הַ', word: 'הַר', hl: 'הַ', rest: 'ר', tr: 'Mountain', emoji: '⛰️' },
+          { symbol: 'הֶ', name: 'סֶגוֹל', sound: 'הֶ', word: 'הֶלִיקוֹפְּטֶר', hl: 'הֶ', rest: 'לִיקוֹפְּטֶר', tr: 'Helicopter', emoji: '🚁' },
+          { symbol: 'הִ', name: 'חִירִיק', sound: 'הִי', word: 'הִיפּוֹ', hl: 'הִי', rest: 'פּוֹ', tr: 'Hippo', emoji: '🦛' },
+          { symbol: 'הוֹ', name: 'חוֹלָם', sound: 'הוֹ', word: 'הוֹרִים', hl: 'הוֹ', rest: 'רִים', tr: 'Parents', emoji: '👨‍👩‍👧' },
+          { symbol: 'הוּ', name: 'שׁוּרוּק', sound: 'הוּ', word: 'הוּא', hl: 'הוּ', rest: 'א', tr: 'He', emoji: '👦' }
+        ]
+      },
+      {
+        letter: 'ו', name: 'וָאו',
+        vowels: [
+          { symbol: 'וָ', name: 'קָמַץ', sound: 'וָ', word: 'וָרוֹד', hl: 'וָ', rest: 'רוֹד', tr: 'Pink', emoji: '🩷' },
+          { symbol: 'וֶ', name: 'סֶגוֹל', sound: 'וֶ', word: 'וֶרֶד', hl: 'וֶ', rest: 'רֶד', tr: 'Rose', emoji: '🌹' },
+          { symbol: 'וִ', name: 'חִירִיק', sound: 'וִי', word: 'וִילוֹן', hl: 'וִ', rest: 'ילוֹן', tr: 'Curtain', emoji: '🪟' }
+        ]
+      },
+      {
+        letter: 'ז', name: 'זַיִן',
+        vowels: [
+          { symbol: 'זָ', name: 'קָמַץ', sound: 'זָ', word: 'זָחַל', hl: 'זָ', rest: 'חַל', tr: 'Caterpillar', emoji: '🐛' },
+          { symbol: 'זֶ', name: 'סֶגוֹל', sound: 'זֶ', word: 'זֶבְרָה', hl: 'זֶ', rest: 'בְרָה', tr: 'Zebra', emoji: '🦓' },
+          { symbol: 'זִ', name: 'חִירִיק', sound: 'זִי', word: 'זִיקִית', hl: 'זִי', rest: 'קִית', tr: 'Chameleon', emoji: '🦎' },
+          { symbol: 'זוֹ', name: 'חוֹלָם', sound: 'זוֹ', word: 'זוֹהֵר', hl: 'זוֹ', rest: 'הֵר', tr: 'Glowing', emoji: '✨' },
+          { symbol: 'זְ', name: 'שְׁוָא', sound: 'זְ', word: 'זְאֵב', hl: 'זְ', rest: 'אֵב', tr: 'Wolf', emoji: '🐺' }
+        ]
+      },
+      {
+        letter: 'ח', name: 'חֵית',
+        vowels: [
+          { symbol: 'חָ', name: 'קָמַץ', sound: 'חָ', word: 'חָתוּל', hl: 'חָ', rest: 'תוּל', tr: 'Cat', emoji: '🐱' },
+          { symbol: 'חֶ', name: 'סֶגוֹל', sound: 'חֶ', word: 'חֶרֶב', hl: 'חֶ', rest: 'רֶב', tr: 'Sword', emoji: '⚔️' },
+          { symbol: 'חִ', name: 'חִירִיק', sound: 'חִי', word: 'חִיפּוּשִׁית', hl: 'חִי', rest: 'פּוּשִׁית', tr: 'Ladybug', emoji: '🐞' },
+          { symbol: 'חוֹ', name: 'חוֹלָם', sound: 'חוֹ', word: 'חוֹף', hl: 'חוֹ', rest: 'ף', tr: 'Beach', emoji: '🏖️' },
+          { symbol: 'חֻ', name: 'קֻבּוּץ', sound: 'חוּ', word: 'חֻלְצָה', hl: 'חֻ', rest: 'לְצָה', tr: 'Shirt', emoji: '👕' }
+        ]
+      },
+      {
+        letter: 'ט', name: 'טֵית',
+        vowels: [
+          { symbol: 'טַ', name: 'פַּתַּח', sound: 'טַ', word: 'טַבַּעַת', hl: 'טַ', rest: 'בַּעַת', tr: 'Ring', emoji: '💍' },
+          { symbol: 'טֶ', name: 'סֶגוֹל', sound: 'טֶ', word: 'טֶלֶפוֹן', hl: 'טֶ', rest: 'לֶפוֹן', tr: 'Phone', emoji: '☎️' },
+          { symbol: 'טִ', name: 'חִירִיק', sound: 'טִי', word: 'טִיפָה', hl: 'טִי', rest: 'פָה', tr: 'Drop', emoji: '💧' },
+          { symbol: 'טוֹ', name: 'חוֹלָם', sound: 'טוֹ', word: 'טוֹסְט', hl: 'טוֹ', rest: 'סְט', tr: 'Toast', emoji: '🍞' },
+          { symbol: 'טוּ', name: 'שׁוּרוּק', sound: 'טוּ', word: 'טוּשׁ', hl: 'טוּ', rest: 'שׁ', tr: 'Marker', emoji: '🖍️' }
+        ]
+      },
+      {
+        letter: 'י', name: 'יוֹד',
+        vowels: [
+          { symbol: 'יַ', name: 'פַּתַּח', sound: 'יַ', word: 'יַנְשׁוּף', hl: 'יַ', rest: 'נְשׁוּף', tr: 'Owl', emoji: '🦉' },
+          { symbol: 'יֶ', name: 'סֶגוֹל', sound: 'יֶ', word: 'יֶלֶד', hl: 'יֶ', rest: 'לֶד', tr: 'Boy', emoji: '👦' },
+          { symbol: 'יִ', name: 'חִירִיק', sound: 'יִי', word: 'יִתּוּשׁ', hl: 'יִ', rest: 'תּוּשׁ', tr: 'Mosquito', emoji: '🦟' },
+          { symbol: 'יוֹ', name: 'חוֹלָם', sound: 'יוֹ', word: 'יוֹנָה', hl: 'יוֹ', rest: 'נָה', tr: 'Dove', emoji: '🕊️' }
+        ]
+      },
+      {
+        letter: 'כ', name: 'כַּף',
+        vowels: [
+          { symbol: 'כַּ', name: 'פַּתַּח (דָּגֵשׁ)', sound: 'כַּ', word: 'כַּדּוּר', hl: 'כַּ', rest: 'דּוּר', tr: 'Ball', emoji: '⚽' },
+          { symbol: 'כֶּ', name: 'סֶגוֹל (דָּגֵשׁ)', sound: 'כֶּ', word: 'כֶּלֶב', hl: 'כֶּ', rest: 'לֶב', tr: 'Dog', emoji: '🐶' },
+          { symbol: 'כִּ', name: 'חִירִיק (דָּגֵשׁ)', sound: 'כִּי', word: 'כִּנּוֹר', hl: 'כִּ', rest: 'נּוֹר', tr: 'Violin', emoji: '🎻' },
+          { symbol: 'כּוֹ', name: 'חוֹלָם (דָּגֵשׁ)', sound: 'כּוֹ', word: 'כּוֹבַע', hl: 'כּוֹ', rest: 'בַע', tr: 'Hat', emoji: '🧢' },
+          { symbol: 'כוֹ', name: 'חוֹלָם (רָפֶה)', sound: 'כוֹ', word: 'מְכוֹנִית', prefix: 'מְ', hl: 'כוֹ', rest: 'נִית', tr: 'Car', emoji: '🚗' },
+          { symbol: 'כֵ', name: 'צֵירֵי (רָפֶה)', sound: 'כֵ', word: 'רוֹכֵב', prefix: 'רוֹ', hl: 'כֵ', rest: 'ב', tr: 'Rider', emoji: '🚲' },
+          { symbol: 'כְ', name: 'שְׁוָא (רָפֶה)', sound: 'כְ', word: 'עַכְבָּר', prefix: 'עַ', hl: 'כְ', rest: 'בָּר', tr: 'Mouse', emoji: '🐭' }
+        ]
+      },
+      {
+        letter: 'ל', name: 'לָמֶד',
+        vowels: [
+          { symbol: 'לָ', name: 'קָמַץ', sound: 'לָ', word: 'לָמָה', hl: 'לָ', rest: 'מָה', tr: 'Llama', emoji: '🦙' },
+          { symbol: 'לֶ', name: 'סֶגוֹל', sound: 'לֶ', word: 'לֶחֶם', hl: 'לֶ', rest: 'חֶם', tr: 'Bread', emoji: '🥖' },
+          { symbol: 'לִ', name: 'חִירִיק', sound: 'לִי', word: 'לִימוֹן', hl: 'לִי', rest: 'מוֹן', tr: 'Lemon', emoji: '🍋' },
+          { symbol: 'לוֹ', name: 'חוֹלָם', sound: 'לוֹ', word: 'בָּלוֹן', prefix: 'בָּ', hl: 'לוֹ', rest: 'ן', tr: 'Balloon', emoji: '🎈' },
+          { symbol: 'לוּ', name: 'שׁוּרוּק', sound: 'לוּ', word: 'לוּחַ', hl: 'לוּ', rest: 'חַ', tr: 'Board', emoji: '📋' }
+        ]
+      },
+      {
+        letter: 'מ', name: 'מֵם',
+        vowels: [
+          { symbol: 'מַ', name: 'פַּתַּח', sound: 'מַ', word: 'מַיִם', hl: 'מַ', rest: 'יִם', tr: 'Water', emoji: '💧' },
+          { symbol: 'מֶ', name: 'סֶגוֹל', sound: 'מֶ', word: 'מֶלֶךְ', hl: 'מֶ', rest: 'לֶךְ', tr: 'King', emoji: '👑' },
+          { symbol: 'מִ', name: 'חִירִיק', sound: 'מִי', word: 'מִטָּה', hl: 'מִ', rest: 'טָּה', tr: 'Bed', emoji: '🛏' },
+          { symbol: 'מוֹ', name: 'חוֹלָם', sound: 'מוֹ', word: 'מוֹרֶה', hl: 'מוֹ', rest: 'רֶה', tr: 'Teacher', emoji: '👨‍🏫' },
+          { symbol: 'מוּ', name: 'שׁוּרוּק', sound: 'מוּ', word: 'מוּסִיקָה', hl: 'מוּ', rest: 'סִיקָה', tr: 'Music', emoji: '🎵' }
+        ]
+      },
+      {
+        letter: 'נ', name: 'נוּן',
+        vowels: [
+          { symbol: 'נָ', name: 'קָמַץ', sound: 'נָ', word: 'נָמֵר', hl: 'נָ', rest: 'מֵר', tr: 'Leopard', emoji: '🐆' },
+          { symbol: 'נֶ', name: 'סֶגוֹל', sound: 'נֶ', word: 'נֶשֶׁר', hl: 'נֶ', rest: 'שֶׁר', tr: 'Eagle', emoji: '🦅' },
+          { symbol: 'נִ', name: 'חִירִיק', sound: 'נִי', word: 'נִינְגָ\'ה', hl: 'נִי', rest: 'נְגָ\'ה', tr: 'Ninja', emoji: '🥷' },
+          { symbol: 'נוֹ', name: 'חוֹלָם', sound: 'נוֹ', word: 'נוֹצָה', hl: 'נוֹ', rest: 'צָה', tr: 'Feather', emoji: '🪶' },
+          { symbol: 'נְ', name: 'שְׁוָא', sound: 'נְ', word: 'נְמָלָה', hl: 'נְ', rest: 'מָלָה', tr: 'Ant', emoji: '🐜' }
+        ]
+      },
+      {
+        letter: 'ס', name: 'סָמֶךְ',
+        vowels: [
+          { symbol: 'סַ', name: 'פַּתַּח', sound: 'סַ', word: 'סַבָּא', hl: 'סַ', rest: 'בָּא', tr: 'Grandpa', emoji: '👴' },
+          { symbol: 'סֶ', name: 'סֶגוֹל', sound: 'סֶ', word: 'סֶפֶר', hl: 'סֶ', rest: 'פֶר', tr: 'Book', emoji: '📖' },
+          { symbol: 'סִ', name: 'חִירִיק', sound: 'סִי', word: 'סִירָה', hl: 'סִי', rest: 'רָה', tr: 'Boat', emoji: '⛵' },
+          { symbol: 'סוֹ', name: 'חוֹלָם', sound: 'סוֹ', word: 'סוֹד', hl: 'סוֹ', rest: 'ד', tr: 'Secret', emoji: '🤫' },
+          { symbol: 'סוּ', name: 'שׁוּרוּק', sound: 'סוּ', word: 'סוּס', hl: 'סוּ', rest: 'ס', tr: 'Horse', emoji: '🐴' }
+        ]
+      },
+      {
+        letter: 'ע', name: 'עַיִן',
+        vowels: [
+          { symbol: 'עַ', name: 'פַּתַּח', sound: 'עַ', word: 'עַיִן', hl: 'עַ', rest: 'יִן', tr: 'Eye', emoji: '👁️' },
+          { symbol: 'עֵ', name: 'צֵירֵי', sound: 'עֵ', word: 'עֵץ', hl: 'עֵ', rest: 'ץ', tr: 'Tree', emoji: '🌳' },
+          { symbol: 'עִ', name: 'חִירִיק', sound: 'עִי', word: 'עִפָּרוֹן', hl: 'עִ', rest: 'פָּרוֹן', tr: 'Pencil', emoji: '✏️' },
+          { symbol: 'עוֹ', name: 'חוֹלָם', sound: 'עוֹ', word: 'עוֹרֵב', hl: 'עוֹ', rest: 'רֵב', tr: 'Crow', emoji: '🐦‍⬛' },
+          { symbol: 'עוּ', name: 'שׁוּרוּק', sound: 'עוּ', word: 'עוּגָה', hl: 'עוּ', rest: 'גָה', tr: 'Cake', emoji: '🎂' }
+        ]
+      },
+      {
+        letter: 'פ', name: 'פֵּא',
+        vowels: [
+          { symbol: 'פַּ', name: 'פַּתַּח (דָּגֵשׁ)', sound: 'פַּ', word: 'פַּרְפַּר', hl: 'פַּ', rest: 'רְפַּר', tr: 'Butterfly', emoji: '🦋' },
+          { symbol: 'פִּ', name: 'חִירִיק (דָּגֵשׁ)', sound: 'פִּי', word: 'פִּיל', hl: 'פִּ', rest: 'יל', tr: 'Elephant', emoji: '🐘' },
+          { symbol: 'פֶּ', name: 'סֶגוֹל (דָּגֵשׁ)', sound: 'פֶּ', word: 'פֶּרַח', hl: 'פֶּ', rest: 'רַח', tr: 'Flower', emoji: '🌸' },
+          { symbol: 'פּוֹ', name: 'חוֹלָם (דָּגֵשׁ)', sound: 'פּוֹ', word: 'פּוֹנִי', hl: 'פּוֹ', rest: 'נִי', tr: 'Pony', emoji: '🐴' },
+          { symbol: 'פַ', name: 'פַּתַּח (רָפֶה)', sound: 'פַ', word: 'אֲפַרְסֵק', prefix: 'אֲ', hl: 'פַ', rest: 'רְסֵק', tr: 'Peach', emoji: '🍑' },
+          { symbol: 'פִ', name: 'חִירִיק (רָפֶה)', sound: 'פִ', word: 'קְפִיץ', prefix: 'קְ', hl: 'פִי', rest: 'ץ', tr: 'Spring', emoji: '🌀' }
+        ]
+      },
+      {
+        letter: 'צ', name: 'צָדִי',
+        vowels: [
+          { symbol: 'צָ', name: 'קָמַץ', sound: 'צָ', word: 'צָב', hl: 'צָ', rest: 'ב', tr: 'Turtle', emoji: '🐢' },
+          { symbol: 'צִ', name: 'חִירִיק', sound: 'צִ', word: 'צִפּוֹר', hl: 'צִ', rest: 'פּוֹר', tr: 'Bird', emoji: '🐦' },
+          { symbol: 'צֶ', name: 'סֶגוֹל', sound: 'צֶ', word: 'צֶבַע', hl: 'צֶ', rest: 'בַע', tr: 'Paint', emoji: '🎨' },
+          { symbol: 'צְ', name: 'שְׁוָא', sound: 'צְ', word: 'צְפַרְדֵּעַ', hl: 'צְ', rest: 'פַרְדֵּעַ', tr: 'Frog', emoji: '🐸' }
+        ]
+      },
+      {
+        letter: 'ק', name: 'קוֹף',
+        vowels: [
+          { symbol: 'קָ', name: 'קָמַץ', sound: 'קָ', word: 'קָפֶה', hl: 'קָ', rest: 'פֶה', tr: 'Coffee', emoji: '☕' },
+          { symbol: 'קֶ', name: 'סֶגוֹל', sound: 'קֶ', word: 'קֶשֶׁת', hl: 'קֶ', rest: 'שֶׁת', tr: 'Rainbow', emoji: '🌈' },
+          { symbol: 'קוֹ', name: 'חוֹלָם', sound: 'קוֹ', word: 'קוֹף', hl: 'קוֹ', rest: 'ף', tr: 'Monkey', emoji: '🐒' },
+          { symbol: 'קִ', name: 'חִירִיק', sound: 'קִ', word: 'קִיר', hl: 'קִ', rest: 'יר', tr: 'Wall', emoji: '🧱' }
+        ]
+      },
+      {
+        letter: 'ר', name: 'רֵישׁ',
+        vowels: [
+          { symbol: 'רַ', name: 'פַּתַּח', sound: 'רַ', word: 'רַכֶּבֶת', hl: 'רַ', rest: 'כֶּבֶת', tr: 'Train', emoji: '🚂' },
+          { symbol: 'רִ', name: 'חִירִיק', sound: 'רִ', word: 'רִמּוֹן', hl: 'רִ', rest: 'מּוֹן', tr: 'Pomegranate', emoji: '🍎' },
+          { symbol: 'רוֹ', name: 'חוֹלָם', sound: 'רוֹ', word: 'רוֹבּוֹט', hl: 'רוֹ', rest: 'בּוֹט', tr: 'Robot', emoji: '🤖' },
+          { symbol: 'רְ', name: 'שְׁוָא', sound: 'רְ', word: 'רְחוֹב', hl: 'רְ', rest: 'חוֹב', tr: 'Street', emoji: '🛣️' }
+        ]
+      },
+      {
+        letter: 'ש', name: 'שִׁין',
+        vowels: [
+          { symbol: 'שָׁ', name: 'קָמַץ', sound: 'שָׁ', word: 'שָׁעוֹן', hl: 'שָׁ', rest: 'עוֹן', tr: 'Watch', emoji: '⌚' },
+          { symbol: 'שֶׁ', name: 'סֶגוֹל', sound: 'שֶׁ', word: 'שֶׁמֶשׁ', hl: 'שֶׁ', rest: 'מֶשׁ', tr: 'Sun', emoji: '☀️' },
+          { symbol: 'שׁוּ', name: 'שׁוּרוּק', sound: 'שׁוּ', word: 'שׁוּעָל', hl: 'שׁוּ', rest: 'עָל', tr: 'Fox', emoji: '🦊' },
+          { symbol: 'שָׂ', name: 'קָמַץ (שִׂין)', sound: 'שָׂ', word: 'שָׂפָה', hl: 'שָׂ', rest: 'פָה', tr: 'Lip', emoji: '👄' },
+          { symbol: 'שְׂ', name: 'שְׁוָא (שִׂין)', sound: 'שְׂ', word: 'שְׂמִיכָה', hl: 'שְׂ', rest: 'מִיכָה', tr: 'Blanket', emoji: '🛌' }
+        ]
+      },
+      {
+        letter: 'ת', name: 'תָּיו',
+        vowels: [
+          { symbol: 'תַּ', name: 'פַּתַּח', sound: 'תַּ', word: 'תַּנִּין', hl: 'תַּ', rest: 'נִּין', tr: 'Crocodile', emoji: '🐊' },
+          { symbol: 'תִּ', name: 'חִירִיק', sound: 'תִּי', word: 'תִּינוֹק', hl: 'תִּ', rest: 'ינוֹק', tr: 'Baby', emoji: '👶' },
+          { symbol: 'תּוּ', name: 'שׁוּרוּק', sound: 'תּוּ', word: 'תּוּת', hl: 'תּוּ', rest: 'ת', tr: 'Strawberry', emoji: '🍓' },
+          { symbol: 'תֵּ', name: 'צֵירֵי', sound: 'תֵּ', word: 'תֵּבָה', hl: 'תֵּ', rest: 'בָה', tr: 'Box', emoji: '📦' }
+        ]
+      }
+    ];
+
+    let currentIdx = 0;
+    let currentVowelIdx = 0;
+    let hebrewVoice = null;
+
+    function setupVoices() {
+      if (!('speechSynthesis' in window)) return;
+      const load = () => {
+        const voices = window.speechSynthesis.getVoices();
+        hebrewVoice = voices.find(v => v.lang.startsWith('he') || v.lang === 'he-IL');
+      };
+      load();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = load;
+      }
+    }
+
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        showToast('מַנְגְּנוֹן הַדִּבּוּר לֹא נִתְמָךְ בְּמַכְשִׁיר זֶה');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = 'he-IL';
+      utt.rate = 0.85;
+      utt.pitch = 1.05;
+      if (hebrewVoice) utt.voice = hebrewVoice;
+      window.speechSynthesis.speak(utt);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('statusToast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      setTimeout(() => {
+        t.classList.remove('opacity-100');
+        t.classList.add('opacity-0');
+      }, 2000);
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('posterGrid');
+      grid.innerHTML = '';
+
+      POSTER_DATA.forEach((item, idx) => {
+        const cell = document.createElement('button');
+        cell.className = 'poster-card min-h-[110px] sm:min-h-[130px] p-3 flex flex-col items-center justify-center relative cursor-pointer hover:border-indigo-300 group';
+        cell.setAttribute('aria-label', `אות ${item.name}`);
+
+        // Extract the Kamatz/Patach emoji (always index 0 now)
+        const previewEmoji = item.vowels[0].emoji;
+
+        cell.innerHTML = `
+          <div class="text-5xl sm:text-6xl font-black text-indigo-900 hebrew-font group-hover:scale-110 transition-transform">
+            ${item.letter}
+          </div>
+          <div class="absolute bottom-2 right-2 text-xl opacity-60 group-hover:opacity-100 group-hover:-translate-y-1 transition-all">
+            ${previewEmoji}
+          </div>
+        `;
+
+        cell.addEventListener('click', () => openLetter(idx));
+        grid.appendChild(cell);
+      });
+    }
+
+    function openLetter(idx) {
+      currentIdx = idx;
+      currentVowelIdx = 0;
+      updateModal();
+      document.getElementById('letterModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+
+      // Slight delay so user sees visual before sound
+      setTimeout(() => { playActiveSound(); }, 200);
+    }
+
+    function closeModal() {
+      document.getElementById('letterModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+
+    function updateModal() {
+      const letter = POSTER_DATA[currentIdx];
+      const vowel = letter.vowels[currentVowelIdx];
+
+      // Top nav
+      document.getElementById('modalLetterName').textContent = letter.name;
+
+      // Update Center Large Details
+      document.getElementById('activeVowelSymbol').textContent = vowel.symbol;
+      
+      // Calculate Radial Positions for options
+      const radialContainer = document.getElementById('radialContainer');
+      radialContainer.innerHTML = '';
+      
+      const totalOptions = letter.vowels.length;
+      // Define orbit radius (adaptive to screen but safely inside container)
+      const isMobile = window.innerWidth < 640;
+      const radius = isMobile ? 110 : 130; 
+
+      letter.vowels.forEach((v, vIdx) => {
+        // Distribute evenly in a circle. Start at top (-90 degrees)
+        const angle = (vIdx / totalOptions) * (2 * Math.PI) - (Math.PI / 2);
+        
+        // Calculate X and Y offsets from center
+        const xOffset = Math.cos(angle) * radius;
+        const yOffset = Math.sin(angle) * radius;
+
+        const btn = document.createElement('button');
+        
+        // Removed the complex active state class logic from here
+        // We will just dim the inactive ones slightly
+        const isSel = vIdx === currentVowelIdx;
+        btn.className = `orbit-btn hebrew-font ${isSel ? 'border-indigo-400 bg-indigo-50 text-indigo-700 shadow-md ring-2 ring-indigo-200 ring-offset-2' : 'text-slate-600 hover:bg-slate-50'}`;
+        
+        // Apply positioned transform
+        btn.style.transform = `translate(${xOffset}px, ${yOffset}px) ${isSel ? 'scale(1.15)' : 'scale(1)'}`;
+        
+        btn.innerHTML = v.symbol;
+        btn.setAttribute('aria-label', v.name);
+        
+        btn.addEventListener('click', () => {
+          currentVowelIdx = vIdx;
+          updateModal();
+          playActiveSound();
+        });
+        
+        radialContainer.appendChild(btn);
+      });
+
+      // Update Word Context at bottom
+      document.getElementById('wordEmoji').textContent = vowel.emoji;
+      document.getElementById('activeNikudName').textContent = vowel.name;
+      
+      const prefixHtml = vowel.prefix ? `<span>${vowel.prefix}</span>` : '';
+      const restHtml = vowel.rest ? `<span>${vowel.rest}</span>` : '';
+      
+      // Highlight style - fixed flexbox layout
+      document.getElementById('wordDisplay').innerHTML = `
+        ${prefixHtml}<span class="text-indigo-600 border-b-4 border-indigo-200 inline-block">${vowel.hl}</span>${restHtml}
+      `;
+      
+      document.getElementById('wordTranslation').textContent = vowel.tr;
+    }
+
+    function playActiveSound() {
+      const vowel = POSTER_DATA[currentIdx].vowels[currentVowelIdx];
+      speak(vowel.sound);
+      
+      // Add pulse animation briefly to center button
+      const centerBtn = document.getElementById('centerPlaySound');
+      centerBtn.classList.add('scale-95');
+      setTimeout(() => centerBtn.classList.remove('scale-95'), 150);
+    }
+
+    function playActiveWord() {
+      const vowel = POSTER_DATA[currentIdx].vowels[currentVowelIdx];
+      speak(vowel.word);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupVoices();
+      renderGrid();
+
+      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+      document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+
+      document.getElementById('centerPlaySound').addEventListener('click', playActiveSound);
+      document.getElementById('playWordAudio').addEventListener('click', playActiveWord);
+
+      document.getElementById('modalPrev').addEventListener('click', () => {
+        currentIdx = (currentIdx - 1 + POSTER_DATA.length) % POSTER_DATA.length;
+        currentVowelIdx = 0;
+        updateModal();
+        playActiveSound();
+      });
+
+      document.getElementById('modalNext').addEventListener('click', () => {
+        currentIdx = (currentIdx + 1) % POSTER_DATA.length;
+        currentVowelIdx = 0;
+        updateModal();
+        playActiveSound();
+      });
+
+      document.getElementById('quickSoundTest').addEventListener('click', () => {
+        speak('שָׁלוֹם, לוּחַ הָאוֹתִיּוֹת מוּכָן');
+        showToast('בּוֹדֵק קוֹל...');
+      });
+
+      // Keyboard navigation
+      window.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('letterModal');
+        if (modal.classList.contains('hidden')) return;
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'ArrowLeft') document.getElementById('modalNext').click();
+        if (e.key === 'ArrowRight') document.getElementById('modalPrev').click();
+      });
+    });
+  </script>
+</body>
+</html>
