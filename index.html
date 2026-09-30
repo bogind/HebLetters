@@ -133,7 +133,7 @@
     <div class="relative w-full sm:max-w-lg bg-[#fdfbf7] rounded-t-[2rem] sm:rounded-3xl shadow-2xl border-2 border-white p-5 sm:p-8 sheet-animate z-10 max-h-[95vh] flex flex-col">
       
       <!-- Top nav: close button + prev/next -->
-      <div class="flex items-center justify-between pb-2">
+      <div class="flex items-center justify-between pb-2 mt-8 sm:mt-2">
         <button id="modalPrev" class="w-10 h-10 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center hover:bg-slate-50 active:scale-90 transition text-slate-400">
           ➡️
         </button>
@@ -446,6 +446,16 @@
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = load;
       }
+
+      // Unlock speech on first interaction for mobile browsers
+      const unlockSpeech = () => {
+        const utt = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(utt);
+        document.removeEventListener('click', unlockSpeech);
+        document.removeEventListener('touchstart', unlockSpeech);
+      };
+      document.addEventListener('click', unlockSpeech);
+      document.addEventListener('touchstart', unlockSpeech);
     }
 
     function speak(text) {
@@ -459,6 +469,13 @@
       utt.rate = 0.85;
       utt.pitch = 1.05;
       if (hebrewVoice) utt.voice = hebrewVoice;
+      
+      utt.onerror = (e) => {
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+           showToast('שְׁגִיאָה בְּהַשְׁמָעַת הַקּוֹל (בִּדְקוּ שֶׁלֹּא עַל הֶשְׁתֵּק)');
+        }
+      };
+
       window.speechSynthesis.speak(utt);
     }
 
@@ -506,8 +523,8 @@
       document.getElementById('letterModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
 
-      // Slight delay so user sees visual before sound
-      setTimeout(() => { playActiveSound(); }, 200);
+      // Play sound immediately (setTimeout blocks audio on mobile browsers)
+      playActiveSound();
     }
 
     function closeModal() {
