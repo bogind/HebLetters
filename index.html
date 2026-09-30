@@ -188,7 +188,7 @@
           </div>
 
           <button id="playWordAudio" class="w-12 h-12 bg-green-100 hover:bg-green-200 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition shadow-sm" title="הַשְׁמָעַת הַמִּלָּה">
-            <svg class="w-6 h-6 fill-current ml-1" viewBox="0 0 20 20">
+            <svg class="w-6 h-6 fill-current pl-1" viewBox="0 0 20 20">
               <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
             </svg>
           </button>
@@ -435,17 +435,76 @@
     let currentIdx = 0;
     let currentVowelIdx = 0;
     let hebrewVoice = null;
+    let audioAvailable = false; // Tracks if the browser allows audio
+
+    // Function to visually update the UI if audio is blocked
+    function updateAudioUI(isAvailable) {
+      // 1. Update Top Bar Test Button
+      const testBtn = document.getElementById('quickSoundTest');
+      if (testBtn) {
+        const spans = testBtn.querySelectorAll('span');
+        if (spans.length >= 2) {
+          spans[0].textContent = isAvailable ? '🔊' : '🔇';
+          spans[1].textContent = isAvailable ? 'בְּדִיקַת קוֹל' : 'שמע חסום';
+        }
+      }
+      
+      // 2. Update Center Main Letter Button in Modal
+      const centerBtn = document.getElementById('centerPlaySound');
+      if (centerBtn) {
+        const badge = centerBtn.lastElementChild;
+        if (badge) {
+           badge.textContent = isAvailable ? '🔊 נַגֵּן' : '🔇 ללא שמע';
+           if (!isAvailable) {
+              badge.classList.remove('bg-orange-400', 'group-hover:bg-orange-500');
+              badge.classList.add('bg-slate-400', 'group-hover:bg-slate-500');
+           }
+        }
+      }
+
+      // 3. Update Bottom Word Play Button
+      const playWordBtn = document.getElementById('playWordAudio');
+      if (playWordBtn) {
+        const svg = playWordBtn.querySelector('svg');
+        if (svg) {
+          if (!isAvailable) {
+            // Swap to a "Muted Speaker" icon
+            svg.innerHTML = '<path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd" />';
+            playWordBtn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-green-200');
+            playWordBtn.classList.add('bg-slate-100', 'text-slate-400', 'hover:bg-slate-200');
+            svg.classList.remove('pl-1'); // Remove alignment offset since the shape changed
+          }
+        }
+      }
+    }
 
     function setupVoices() {
-      if (!('speechSynthesis' in window)) return;
+      if (!('speechSynthesis' in window)) {
+        updateAudioUI(false);
+        return;
+      }
+      
       const load = () => {
         const voices = window.speechSynthesis.getVoices();
-        hebrewVoice = voices.find(v => v.lang.startsWith('he') || v.lang === 'he-IL');
+        // If voices array is populated, the browser supports it
+        if (voices.length > 0) {
+          audioAvailable = true;
+          updateAudioUI(true);
+          hebrewVoice = voices.find(v => v.lang.startsWith('he') || v.lang === 'he-IL');
+        }
       };
+      
       load();
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = load;
       }
+
+      // Fallback check: If after 1 second no voices loaded, assume the browser blocked it
+      setTimeout(() => {
+        if (!audioAvailable) {
+          updateAudioUI(false);
+        }
+      }, 1000);
 
       // Unlock speech on first interaction for mobile browsers
       const unlockSpeech = () => {
@@ -459,10 +518,12 @@
     }
 
     function speak(text) {
-      if (!('speechSynthesis' in window)) {
-        showToast('מַנְגְּנוֹן הַדִּבּוּר לֹא נִתְמָךְ בְּמַכְשִׁיר זֶה');
+      // Prevent running if blocked or unsupported, and show specific toast
+      if (!audioAvailable || !('speechSynthesis' in window)) {
+        showToast('מַנְגְּנוֹן הַשְׁמָעַת הַקּוֹל חָסוּם בְּדֻפְדְּפָן זֶה');
         return;
       }
+      
       window.speechSynthesis.cancel();
       const utt = new SpeechSynthesisUtterance(text);
       utt.lang = 'he-IL';
